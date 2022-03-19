@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+#info {
+		position: absolute;
+		top: 0px; width: 100%;
+		
+		padding: 5px;
+		text-align: center;
+		font-size: 20px;
+		color: #ffff00
+	} 
+body {
+	overflow: hidden;
+	margin:0;
+	padding:0;
+	
+}
+</style>
+</head>
+
+<body>
+<div id='info'>
+<button id="toggle" style="width:20%">Toggle</button>
+</div>
+<script src="https://threejs.org/build/three.min.js"></script>
+<script src="https://threejs.org/examples/js/controls/OrbitControls.js"></script>
+<script src="https://threejs.org/examples/js/loaders/OBJLoader.js"></script>
+<script src="https://threejs.org/examples/js/loaders/MTLLoader.js"></script>
+<script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+
+<script>
+
+var renderer, scene, camera;
+var object;
+var thomas;
+var angle=0;
+var clock;
+var time;
+var turn=true;
+
+$('#toggle').click(function(){
+     turn=!turn;
+});
+
+
+init();
+animate();
+
+function init () {
+	
+	renderer = new THREE.WebGLRenderer();
+	document.body.appendChild (renderer.domElement);
+	var width = window.innerWidth;
+	var height = window.innerHeight;
+	renderer.setSize (width, height);
+	
+	renderer.setClearColor (0x888888);
+	
+	scene = new THREE.Scene();
+	var grid = new THREE.GridHelper(20,20, 0xaaaa00, 0x333333);
+	scene.add (grid);
+	var axes = new THREE.AxesHelper (5);
+	scene.add (axes);
+	
+	camera = new THREE.PerspectiveCamera (35, width/height, 1, 100);
+	camera.position.y = 16;
+	camera.position.z = 40;
+	camera.lookAt (new THREE.Vector3(0,0,0));
+	
+	let controls = new THREE.OrbitControls(camera, renderer.domElement);
+	var ambientLight = new THREE.AmbientLight(0xffffff);
+    scene.add(ambientLight);
+	window.addEventListener('resize', onWindowResize, false);
+	
+	clock=new THREE.Clock();
+    clock.getDelta();
+	
+	scene.add(makeTrack());
+	
+	readModel('thomas');
+}
+
+function makeTrack() 
+{
+   var points=[];
+   var theta = 0;
+   for(var i= 0;i<100;i++)
+   {
+     theta=i*Math.PI*2/100;
+     var point = new THREE.Vector3(8*Math.cos(theta),0,8*Math.sin(theta));
+	 points.push (point);
+    }
+     
+	 var geom =new THREE.BufferGeometry ().setFromPoints(points);
+	 
+     var line=new THREE.Line (geom, new THREE.LineBasicMaterial({color:0xff0000}));
+	 
+	 return line;
+
+}
+
+function readModel (modelName, targetSize=5) {
+
+  var onProgress = function(xhr) {
+    if (xhr.lengthComputable) {
+      var percentComplete = xhr.loaded / xhr.total * 100;
+      console.log(Math.round(percentComplete, 2) + '% downloaded');
+    }
+  };
+
+  var onError = function(xhr) {};
+
+  var mtlLoader = new THREE.MTLLoader();
+  mtlLoader.setPath('models/');
+  mtlLoader.load(modelName+'.mtl', function(materials) {
+
+    materials.preload();
+
+    var objLoader = new THREE.OBJLoader();
+    objLoader.setMaterials(materials);
+    objLoader.setPath('models/');
+    objLoader.load(modelName+'.obj', function(object) {
+		
+		thomas =  unitize (object, targetSize);
+		//theObject.add ( new THREE.BoxHelper (theObject) )
+		thomas.name = 'OBJ'
+		scene.add (thomas);
+
+		
+		thomas.setRotationFromEuler (new THREE.Euler (3.1416/2, 0, -3.1416/2, 'ZYX'))
+		thomas.rotation.x += - Math.PI/2;	
+		
+    }, onProgress, onError);
+
+  });
+
+}
+
+////////////////////////////////////////
+// wrap an Object3D around the given object
+// so that it is centered at +Y axis
+// 
+function unitize (object, targetSize) {  
+
+	
+	// find bounding box of 'object'
+	var box3 = new THREE.Box3();
+	box3.setFromObject (object);
+	var size = new THREE.Vector3();
+	size.subVectors (box3.max, box3.min);
+	var center = new THREE.Vector3();
+	center.addVectors(box3.max, box3.min).multiplyScalar (0.5);
+	
+	console.log ('center: ' + center.x + ', '+center.y + ', '+center.z );
+	console.log ('size: ' + size.x + ', ' +  size.y + ', '+size.z );
+	
+	// uniform scaling according to objSize
+	var objSize = Math.max (size.x, size.y, size.z);
+	var scaleSet = targetSize/objSize;
+				
+	var theObject =  new THREE.Object3D();
+	theObject.add (object);
+	object.scale.set (scaleSet, scaleSet, scaleSet);
+	object.position.set (-center.x*scaleSet, -center.y*scaleSet, -center.z*scaleSet);
+	
+	return theObject;
+			
+} 
+
+function onWindowResize() {
+  
+  var width = window.innerWidth;
+  var height = window.innerHeight;
+  camera.aspect = width / height;
+  camera.updateProjectionMatrix();
+  renderer.setSize(width, height);
+	
+}
+
+function animate() {
+	
+	var dt=clock.getDelta();
+	
+	if(thomas!=undefined)
+	{
+	if(turn===true)
+	{
+	angle += 2*Math.PI/30*dt;
+	thomas.position.set (8*Math.cos(angle),1.15,-8*Math.sin(angle));
+	thomas.rotation.y = angle+Math.PI/2*3;
+	}
+	}
+	
+	
+	requestAnimationFrame(animate);
+	render();
+	
+}
+
+function render() {
+	
+	renderer.render(scene, camera);
+	
+}
+
+</script>
+</body>
+
+</html>
