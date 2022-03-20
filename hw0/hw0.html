@@ -21,6 +21,11 @@ body {
 </head>
 
 <body>
+
+<audio id="soundtrack" autoplay loop style="display:none">
+<source src="./music.mp3"  type='audio/mp3'>
+</audio>
+
 <div id='info'>
 <button id="toggle" style="width:20%">Toggle</button>
 </div>
@@ -32,13 +37,14 @@ body {
 
 <script>
 
+var soundTrack;
 var renderer, scene, camera;
 var object;
 var thomas;
 var angle=0;
 var clock;
 var time;
-var turn=true;
+var turn=false;
 
 $('#toggle').click(function(){
      turn=!turn;
@@ -49,6 +55,7 @@ init();
 animate();
 
 function init () {
+	soundTrack = document.getElementById ('soundtrack');
 	
 	renderer = new THREE.WebGLRenderer();
 	document.body.appendChild (renderer.domElement);
@@ -60,9 +67,9 @@ function init () {
 	
 	scene = new THREE.Scene();
 	var grid = new THREE.GridHelper(20,20, 0xaaaa00, 0x333333);
-	scene.add (grid);
+	//scene.add (grid);
 	var axes = new THREE.AxesHelper (5);
-	scene.add (axes);
+	//scene.add (axes);
 	
 	camera = new THREE.PerspectiveCamera (35, width/height, 1, 100);
 	camera.position.y = 16;
@@ -78,6 +85,8 @@ function init () {
     clock.getDelta();
 	
 	scene.add(makeTrack());
+	scene.add(makeTrack2());
+	makeTrack3();
 	
 	readModel('thomas');
 }
@@ -86,18 +95,60 @@ function makeTrack()
 {
    var points=[];
    var theta = 0;
-   for(var i= 0;i<100;i++)
+   for(var i= 0;i<150;i++)
    {
      theta=i*Math.PI*2/100;
-     var point = new THREE.Vector3(8*Math.cos(theta),0,8*Math.sin(theta));
+     var point = new THREE.Vector3(7.4*Math.cos(theta),0,7.4*Math.sin(theta));
 	 points.push (point);
     }
      
 	 var geom =new THREE.BufferGeometry ().setFromPoints(points);
 	 
-     var line=new THREE.Line (geom, new THREE.LineBasicMaterial({color:0xff0000}));
+     var line=new THREE.Line (geom, new THREE.LineBasicMaterial({color:0x000000}));
 	 
 	 return line;
+
+}
+
+function makeTrack2() 
+{
+   var points=[];
+   var theta = 0;
+   for(var i= 0;i<150;i++)
+   {
+     theta=i*Math.PI*2/100;
+     var point = new THREE.Vector3(9*Math.cos(theta),0,9*Math.sin(theta));
+	 points.push (point);
+    }
+     
+	 var geom =new THREE.BufferGeometry ().setFromPoints(points);
+	 
+     var line=new THREE.Line (geom, new THREE.LineBasicMaterial({color:0x000000}));
+	 
+	 return line;
+
+}
+
+function makeTrack3() 
+{
+   var theta = 0;
+   for(var i=0;i<80;i++)
+   {
+   var points=[];
+   theta=i*Math.PI*2/80;
+   var point = new THREE.Vector3(7.4*Math.cos(theta),0,7.4*Math.sin(theta));
+   points.push (point);
+   var point = new THREE.Vector3(9*Math.cos(theta),0,9*Math.sin(theta));
+   points.push (point);
+   
+   var geom =new THREE.BufferGeometry ().setFromPoints(points);
+	 
+   var line=new THREE.Line (geom, new THREE.LineBasicMaterial({color:0x000000}));
+   
+   scene.add(line);
+   }
+   
+     
 
 }
 
@@ -190,7 +241,14 @@ function animate() {
 	angle += 2*Math.PI/30*dt;
 	thomas.position.set (8*Math.cos(angle),1.15,-8*Math.sin(angle));
 	thomas.rotation.y = angle+Math.PI/2*3;
+	soundTrack.play();
 	}
+	else if(turn===false)
+	{
+	thomas.position.set (8*Math.cos(angle),1.15,-8*Math.sin(angle));
+	soundTrack.pause();
+	}
+	
 	}
 	
 	
