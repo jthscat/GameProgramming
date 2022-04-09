@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+<style>
+#info {
+  position: absolute;
+  top: 0px;
+  width: 100%;
+  padding: 10px;
+  text-align: center;
+  color: #ffff00
+}
+
+body {
+  overflow: hidden;
+}
+
+
+</style>
+</head>
+
+<body> 
+<div id="info">Game Physics</div>
+<audio id="hit" style="display:none">
+<source src="./hit.mp3" type='audio/mp3'>
+</audio>
+<audio id="hit2" style="display:none">
+<source src="./hit2.mp3" type='audio/mp3'>
+</audio>
+<audio id="hit3" style="display:none">
+<source src="./hit3.mp3" type='audio/mp3'>
+</audio>
+<audio id="hit4" style="display:none">
+<source src="./hit4.mp3" type='audio/mp3'>
+</audio>
+<audio id="hit5" style="display:none">
+<source src="./hit5.mp3" type='audio/mp3'>
+</audio>
+<script src="https://threejs.org/build/three.min.js"></script>
+<script src="https://threejs.org/examples/js/controls/OrbitControls.js">
+</script>
+
+<script>
+(function(){Math.clamp=function(a,b,c){return Math.max(b,Math.min(c,a));}})();
+var camera, scene, renderer;
+var walls= [];
+var pucks= [];
+var R=7;
+var clock;
+
+
+class Puck{
+      vel;
+	  force;
+  constructor (pos, vel, mesh) {
+      this.pos = pos;
+      this.vel = vel;
+      this.force = new THREE.Vector3(0,0,0);
+      this.mesh = mesh;
+	  
+	  var light = new THREE.PointLight(mesh.material.color,1,100);
+	  light.position.y=5;
+      this.group = new THREE.Group();
+	  this.group.add(mesh);
+      this.group.add(light);
+      mesh.material.color = new THREE.Color().setHSL (Math.random(), 0.5, 0.7);
+      
+      this.group.position.copy (pos);
+      
+      //light.position.copy (this.mesh.position);
+      //scene.add(light);
+      //scene.add (this.mesh);
+      scene.add(this.group);
+
+   }
+   
+   update(dt) {
+  	this.vel.add (this.force.clone().multiplyScalar (dt));
+  	this.group.position.add (this.vel.clone().multiplyScalar (dt));
+  
+    // wall-collision
+  if (this.group.position.x > 75-R) {
+     hit.play();
+  	 this.vel.x = - this.vel.x;
+     this.group.position.x=75-R;
+  }
+  if (this.group.position.x < -75+R) {
+     hit3.play();
+  	 this.vel.x = - this.vel.x;
+     this.group.position.x = -75+R;
+  }
+ if (this.group.position.z > 75-R) {
+     hit4.play();
+  	 this.vel.z = - this.vel.z;
+     this.group.position.z = 75-R;
+  }
+  if (this.group.position.z < -75+R) {
+     hit5.play()
+  	 this.vel.z = - this.vel.z;
+     this.group.position.z =-75+R;
+  }//邊界碰撞
+    
+   for(var i=0;i<7;i++){
+   for(var j=0;j<7;j++){
+	   
+      if((pucks[i].group.position.x-pucks[j].group.position.x)*(pucks[i].group.position.x-pucks[j].group.position.x)+(pucks[i].group.position.z-pucks[j].group.position.z)*(pucks[i].group.position.z-pucks[j].group.position.z)<(R+R)*(R+R)&&i!=j)//如果球碰撞到
+	  {
+	    hit2.play();
+	    var temp=new THREE.Vector3(0,0,0);
+		pucks[i].group.position.add(pucks[i].vel.clone().normalize().negate().multiplyScalar (dt));
+		pucks[j].group.position.add(pucks[j].vel.clone().normalize().negate().multiplyScalar (dt));//返回上一動
+		temp.copy(pucks[i].vel);
+		pucks[i].vel.copy(pucks[j].vel);
+		pucks[j].vel.copy(temp);//向量交換
+		pucks[i].group.position.add(pucks[i].vel.clone().multiplyScalar (dt));
+		pucks[j].group.position.add(pucks[j].vel.clone().multiplyScalar (dt));
+	  } 
+  	 
+   }
+  }
+	
+	
+ }
+}
+
+function buildPuckMesh (mycolor) {
+  let puckMesh = new THREE.Mesh (new THREE.CylinderGeometry(R,R,3,20), new THREE.MeshPhongMaterial({shininess: 200}));
+  puckMesh.material.color = mycolor;
+  return puckMesh;
+}
+
+class wall{
+  constructor(px,pz)
+  {
+    this.px=px;
+    this.pz=pz;
+    var mesh=new THREE.Mesh(new THREE.BoxGeometry(160,40, 10),new THREE.MeshPhongMaterial({color:0xADADAD, transparent: true, opacity:0.4}));
+     
+   if(px == 80||px==-80)
+   {
+     mesh.rotation.y=Math.PI/2;
+   } 
+   mesh.position.set(px,0,pz);
+   return mesh; 
+  }
+  
+}
+
+/////////////////////////////////////////////
+init();
+animate();
+
+function init() {
+
+  hit = document.getElementById('hit');
+  hit2 = document.getElementById('hit2');
+   
+  scene = new THREE.Scene();
+  clock = new THREE.Clock();
+  renderer = new THREE.WebGLRenderer();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setClearColor(0xE0E0E0);
+  document.body.appendChild(renderer.domElement);
+
+  camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 1000);
+  camera.position.set(0,150,100);
+  let controls = new THREE.OrbitControls(camera, renderer.domElement);
+ var floor = new THREE.Mesh(new THREE.PlaneGeometry(150,160),new THREE.MeshPhongMaterial({color: 0x7B7B7B,shininess: 200,side:THREE.DoubleSide,}))
+	floor.rotation.x = -Math.PI/2;
+  floor.position.y = -18;
+	scene.add(floor);
+var pointLight = new THREE.PointLight( 0xffffff,1,10000 );
+pointLight.position.y = 500;
+pointLight.power = 2;
+scene.add(pointLight);
+var ambientLight = new THREE.AmbientLight( 0x272727 );
+scene.add(ambientLight);
+////////////////////////////////////////////////////////////////
+  var gridXZ = new THREE.GridHelper(200, 20, 'red', 'white');
+  //scene.add(gridXZ);
+  walls = new THREE.Group();
+  
+  walls.add(new wall(0,-80));
+	walls.add(new wall(0,80));
+	walls.add(new wall(80,0));
+	walls.add(new wall(-80,0));
+  scene.add(walls);
+  
+  let puckMesh = buildPuckMesh (new THREE.Color().setHSL (Math.random(), .9, .4));
+  
+  let puck1= new Puck (new THREE.Vector3(0,-15,0), new THREE.Vector3(0,0,0), puckMesh);
+	pucks.push (puck1);
+  
+  puckMesh = buildPuckMesh (new THREE.Color().setHSL (Math.random(), .9, .4));
+  let puck2= new Puck (new THREE.Vector3(30,-15,-35), new THREE.Vector3(0,0,0), puckMesh);
+	pucks.push (puck2);
+  
+  puckMesh = buildPuckMesh (new THREE.Color().setHSL (Math.random(), .9, .4));
+  let puck3= new Puck (new THREE.Vector3(0,-15,-50), new THREE.Vector3(0,0,0), puckMesh);
+	pucks.push (puck3);
+  
+  puckMesh = buildPuckMesh (new THREE.Color().setHSL (Math.random(), .9, .4));
+  let puck4= new Puck (new THREE.Vector3(30,-15,60), new THREE.Vector3(0,0,0), puckMesh);
+	pucks.push (puck4);
+  
+  puckMesh = buildPuckMesh (new THREE.Color().setHSL (Math.random(), .9, .4));
+  let puck5= new Puck (new THREE.Vector3(-50,-15,55), new THREE.Vector3(0,0,0), puckMesh);
+	pucks.push (puck5);
+  
+  puckMesh = buildPuckMesh (new THREE.Color().setHSL (Math.random(), .9, .4));
+  let puck6= new Puck (new THREE.Vector3(-30,-15,20), new THREE.Vector3(0,0,0), puckMesh);
+	pucks.push (puck6);
+  
+  puckMesh = buildPuckMesh (new THREE.Color().setHSL (Math.random(), .9, .4));
+  let puck7= new Puck (new THREE.Vector3(0,-15,35), new THREE.Vector3(0,0,0), puckMesh);
+	pucks.push (puck7);
+  
+  pucks.forEach(function (a){
+		a.vel = new THREE.Vector3(Math.clamp(Math.random()*100,1,100),0,Math.clamp(Math.random()*100,1,100));
+	});
+   
+}
+
+function animate() {
+   
+  var dt = clock.getDelta();
+  for (let i = 0; i < pucks.length; i++)
+  	pucks[i].update (dt);
+  
+  
+   
+  requestAnimationFrame(animate);
+  render();
+
+}
+
+function render() {
+
+  renderer.render(scene, camera);
+
+}
+
+
+</script>
+</body>
+
+</html>
