@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+<style>
+#info {
+  position: absolute;
+  top: 0px;
+  width: 100%;
+  padding: 10px;
+  text-align: center;
+  color: #ffff00
+}
+
+body {
+  overflow: hidden;
+}
+
+
+</style>
+</head>
+
+<body> 
+<div id="info">HW2<br> 
+<button id="toggle" style="width:20%">Switch View</button>
+</div>
+<script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+<script src="https://threejs.org/build/three.min.js"></script>
+<script src="https://threejs.org/examples/js/controls/OrbitControls.js">
+</script>
+<script>
+var camera, scene, renderer;
+const WW = 4; // see notes p.10-11, p.18
+const HH = 12;
+var torso;
+var head;
+var lArm;
+var rArm;
+var rLeg;
+var lLeg;
+var angle=0;
+var angle2=0;
+var theta=0;
+var sign=1;
+var sign2=1;
+var clock;
+var change=false;
+var R=50;
+var T=1;
+var mode1=true,mode2=false;
+var camera2;
+
+ $('#toggle').click(function(){
+     if(mode1)
+     {
+     mode1=false;
+     mode2=true;
+     }
+     else
+     {
+     mode1=true;
+     mode2=false;
+     }  
+})
+
+init();
+animate();
+
+function init() {
+
+  scene = new THREE.Scene();
+  clock = new THREE.Clock();
+  
+  renderer = new THREE.WebGLRenderer();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setClearColor(0x888888);
+  document.body.appendChild(renderer.domElement);
+
+  camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 1000);
+  camera.position.y = 200;
+  camera.position.z = 200;
+  let controls = new THREE.OrbitControls(camera, renderer.domElement);
+  
+  camera2 = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 1000);
+  camera2.position.set(-10, 10, 0);
+  scene.add(camera2);
+
+  ////////////////////////////////////////////////////////////////
+  var gridXZ = new THREE.GridHelper(200, 20, 'red', 'white');
+  scene.add(gridXZ);
+  
+  head = buildHead();
+  torso = buildTorso();
+  torso.add (head);
+  head.position.y = HH;
+  scene.add (torso);
+  torso.position.set (0, HH, 0);
+  
+   lArm = buildLArm();
+  torso.add (lArm);
+  lArm.position.set (WW+WW/2, HH, 0);
+
+	 lLeg = buildLLeg();
+  torso.add (lLeg);
+  lLeg.position.set (WW/2, 0, 0);
+  
+   rLeg =buildRLeg();
+  torso.add (rLeg);
+  rLeg.position.set (-WW/2,0,0);
+  
+   rArm = buildRArm();
+  torso.add (rArm);
+  rArm.position.set (-WW-WW/2, HH, 0);
+  
+  //head.rotation.y = Math.PI/6;
+ // lArm.rotation.x = -Math.PI/6;
+  lLeg.rotation.x = Math.PI/6;
+  //rArm.rotation.x = Math.PI/6;
+  rLeg.rotation.x =-Math.PI/6;
+  
+
+}
+
+function buildHead() {
+	let head = new THREE.Group();
+  let mesh = new THREE.Mesh (new THREE.BoxGeometry(2*WW,2*WW,2*WW), new THREE.MeshNormalMaterial());
+  head.add (mesh);
+  mesh.position.y = WW;
+  return head;
+}
+
+function buildLArm() {
+	let lArm = new THREE.Group();
+  let mesh = new THREE.Mesh (new THREE.BoxGeometry(WW,HH,WW), new THREE.MeshNormalMaterial());
+  lArm.add (mesh);
+  mesh.position.y = -HH/2;
+  return lArm;
+}
+function buildRArm() {
+	let rArm = new THREE.Group();
+  let mesh = new THREE.Mesh (new THREE.BoxGeometry(WW,HH,WW), new THREE.MeshNormalMaterial());
+  rArm.add (mesh);
+  mesh.position.y = -HH/2;
+  return rArm;
+}
+function buildLLeg() {
+	let lLeg = new THREE.Group();
+  let mesh = new THREE.Mesh (new THREE.BoxGeometry(WW,HH,WW), new THREE.MeshNormalMaterial());
+  lLeg.add (mesh);
+  mesh.position.y = -HH/2;
+  return lLeg;
+}
+function buildRLeg() {
+	let rLeg = new THREE.Group();
+  let mesh = new THREE.Mesh (new THREE.BoxGeometry(WW,HH,WW), new THREE.MeshNormalMaterial());
+  rLeg.add (mesh);
+  mesh.position.y = -HH/2;
+  return rLeg;
+}
+function buildTorso() {
+	let torso = new THREE.Group();
+  let mesh = new THREE.Mesh (new THREE.BoxGeometry(2*WW,HH,WW), new THREE.MeshNormalMaterial());
+  torso.add (mesh);
+  mesh.position.y = HH/2;
+
+	return torso;
+}
+
+
+
+function animate() {
+  camera2.position.copy(torso.valueOf().localToWorld(new THREE.Vector3(0, 50, -40)));
+  camera2.lookAt(torso.localToWorld(new THREE.Vector3(0, 0, 20)));
+  
+  var dt = clock.getDelta();
+  angle+=60*sign*dt*Math.PI/60;
+  angle2+=60*sign*dt*Math.PI/60;
+  
+  lLeg.rotation.x=-angle;
+  rLeg.rotation.x=angle;
+  if(angle>Math.PI/4||angle<-Math.PI/4)
+  {
+   sign=sign*-1;
+  }
+  
+ if(angle2>Math.PI/6||angle2<-Math.PI/4)
+  {
+   sign2=sign2*-1;
+  }
+  rArm.rotation.x=-angle2;
+  lArm.rotation.x=angle2;
+  
+  
+  let omega = HH/R/T; 
+  
+  if(change==false){
+  //pAngle += 20*Math.PI/30*dt;
+  theta += omega*dt;
+  torso.position.set(R*Math.cos(theta),HH,-R*Math.sin(theta));
+  torso.rotation.y = theta+Math.PI;
+  if(theta>2*Math.PI)
+  {
+    change=true;
+    theta=0;
+    R=20;
+  }
+  }
+  if(change==true)
+  {
+  //pAngle -= 20*Math.PI/30*dt;
+  theta -= omega*dt;
+  torso.position.set(-R*Math.cos(theta)+70,HH,R*Math.sin(theta));
+  torso.rotation.y =theta+Math.PI;
+  if(theta<-2*Math.PI)
+  {
+    change=false;
+    theta=0;
+    R=50;
+  }
+  }
+  
+  
+  
+  requestAnimationFrame(animate);
+  render();
+
+}
+
+function render() {
+  var W = window.innerWidth;
+  var H = window.innerHeight;
+  renderer.clear();
+  
+   if(mode1)
+  {
+  renderer.setViewport (0,0,W,H);
+  renderer.render(scene, camera);
+  }
+  else
+  {
+  renderer.setViewport(0 , 0, W , H);
+  renderer.render(scene, camera2);
+  }
+ 
+
+}
+
+
+</script>
+</body>
+
+</html>
